@@ -1,0 +1,1 @@
+Dockerfile for building sourcemod with a newer postgres version (currently pg14).

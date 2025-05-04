@@ -1,7 +1,6 @@
 FROM ubuntu:20.04 AS pg
 
-RUN dpkg --add-architecture i386 && apt-get update
-RUN apt-get install wget -y g++-multilib linux-libc-dev:i386 lib32z1-dev make
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install wget -y g++-multilib linux-libc-dev:i386 lib32z1-dev make
 
 WORKDIR /build
 
@@ -14,6 +13,8 @@ RUN CFLAGS='-fPIC -m32' ./configure --without-readline && make -j10
 
 FROM ubuntu:20.04
 
+VOLUME /buildoutput
+
 WORKDIR /buildroot/pg14
 
 # USER root
@@ -23,16 +24,15 @@ RUN dpkg --add-architecture i386 && \
 
 WORKDIR /buildroot
 
-RUN git clone --recursive https://github.com/alliedmodders/sourcemod
-RUN sourcemod/tools/checkout-deps.sh
+RUN git clone --recursive https://github.com/alliedmodders/sourcemod && sourcemod/tools/checkout-deps.sh
 
 WORKDIR /buildroot/sourcemod/build
 
 COPY --from=pg /build/postgresql-14.17/src/interfaces/libpq/libpq.a /buildroot/sourcemod/extensions/pgsql/lib_linux/libpq.a
 
-RUN python3 ../configure.py -s all
+RUN python3 ../configure.py -s all && /root/.local/bin/ambuild
 
-RUN /root/.local/bin/ambuild
+WORKDIR /buildroot/sourcemod/build/package
 
-CMD ["/bin/bash"]
+CMD ["tar", "-czvf", "/buildoutput/sourcemod-1.13.pg14.tar.gz", "addons/", "cfg/"]
 
